@@ -7,16 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Modelo base que heredarán otros modelos
-model BaseModel {
-  id        String    @id @default(uuid()) @map("_id")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  isDeleted Boolean   @default(false) @map("is_deleted")
-  deletedAt DateTime? @map("deleted_at")
-  User      User[]
-}
-
 /// Modelo de roles de usuario
 model Role {
   id       String @id @default(uuid()) @map("_id")
@@ -29,15 +19,18 @@ model Role {
 /// Modelo de Usuario
 model User {
 
-  id       String @id @default(uuid()) @map("_id")
-  username String @unique
-  password String
-  email    String @unique
-  roleId   String @map("role_id")
-  role     Role   @relation(fields: [roleId], references: [id])
+  id        String    @id @default(uuid()) @map("_id")
+  username  String    @unique
+  password  String
+  email     String    @unique
+  roleId    String    @map("role_id")
+  role      Role      @relation(fields: [roleId], references: [id])
 
-  baseId   String    @map("base_id")
-  baseData BaseModel @relation(fields: [baseId], references: [id])
+  // Campos de auditoría (anteriormente en BaseModel)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at")
 
   @@map("users")
 }

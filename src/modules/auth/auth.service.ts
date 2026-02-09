@@ -1,5 +1,8 @@
-
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -21,10 +24,7 @@ export class AuthService {
     // Verificar si el usuario ya existe
     const existingUser = await this.prisma.user.findFirst({
       where: {
-        OR: [
-          { username },
-          { email },
-        ],
+        OR: [{ username }, { email }],
       },
     });
 
@@ -45,50 +45,35 @@ export class AuthService {
       throw new Error('Rol por defecto no encontrado');
     }
 
-    // Crear el usuario
+    // Crear el usuario con los campos de auditoría incluidos
     const user = await this.prisma.user.create({
       data: {
         username,
         email,
         password: hashedPassword,
         roleId: defaultRole.id,
-        baseId: '', // Se asignará después de crear el BaseModel
       },
-    });
-
-    // Crear el BaseModel
-    const baseModel = await this.prisma.baseModel.create({
-      data: {
-        id: user.id,
-      },
-    });
-
-    // Actualizar el usuario con el baseId
-    const updatedUser = await this.prisma.user.update({
-      where: { id: user.id },
-      data: { baseId: baseModel.id },
       include: {
         role: true,
-        baseData: true,
       },
     });
 
     // Generar JWT
-    const payload = { 
-      sub: updatedUser.id, 
-      username: updatedUser.username, 
-      email: updatedUser.email,
-      role: updatedUser.role.roleName 
+    const payload = {
+      sub: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role.roleName,
     };
-    
+
     const token = this.jwtService.sign(payload);
 
     return {
       user: {
-        id: updatedUser.id,
-        username: updatedUser.username,
-        email: updatedUser.email,
-        role: updatedUser.role.roleName,
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role.roleName,
       },
       token,
     };
@@ -102,13 +87,13 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    const payload = { 
-      sub: user.id, 
-      username: user.username, 
+    const payload = {
+      sub: user.id,
+      username: user.username,
       email: user.email,
-      role: user.role.roleName 
+      role: user.role.roleName,
     };
-    
+
     const token = this.jwtService.sign(payload);
 
     return {
@@ -125,18 +110,14 @@ export class AuthService {
   async validateUser(username: string, password: string): Promise<any> {
     const user = await this.prisma.user.findFirst({
       where: {
-        OR: [
-          { username },
-          { email: username },
-        ],
+        OR: [{ username }, { email: username }],
       },
       include: {
         role: true,
-        baseData: true,
       },
     });
 
-    if (user && await bcrypt.compare(password, user.password)) {
+    if (user && (await bcrypt.compare(password, user.password))) {
       const { password: _, ...result } = user;
       return result;
     }

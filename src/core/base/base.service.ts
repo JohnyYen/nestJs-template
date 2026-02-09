@@ -124,6 +124,6 @@ export class BaseService<T, CreateDto, UpdateDto>
    * @returns The entity name
    */
   protected getEntityName(): string {
-    return 'no imlemented'
+    return 'not implemented';
   }
 }

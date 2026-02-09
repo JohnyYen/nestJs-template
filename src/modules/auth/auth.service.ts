@@ -6,7 +6,6 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
-import { AuthLoginDto } from './dto/auth-login.dto';
 import { AuthRegisterDto } from './dto/auth-register.dto';
 import * as bcrypt from 'bcrypt';
 
@@ -32,9 +31,9 @@ export class AuthService {
       throw new ConflictException('El usuario o email ya existe');
     }
 
-    // Hash de la contraseña
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    // Hash de la contraseña usando configuración
+    const saltRounds = this.configService.get<number>('bcrypt.saltRounds', 10);
+    const hashedPassword: string = await bcrypt.hash(password, saltRounds);
 
     // Obtener el rol por defecto (asumiendo que existe un rol 'user')
     const defaultRole = await this.prisma.role.findFirst({
@@ -79,19 +78,13 @@ export class AuthService {
     };
   }
 
-  async login(loginDto: AuthLoginDto) {
-    const { username, password } = loginDto;
-
-    const user = await this.validateUser(username, password);
-    if (!user) {
-      throw new UnauthorizedException('Credenciales inválidas');
-    }
-
+  async login(user: any) {
+    // El usuario ya viene validado del LocalAuthGuard (req.user)
     const payload = {
       sub: user.id,
       username: user.username,
       email: user.email,
-      role: user.role.roleName,
+      role: user.role,
     };
 
     const token = this.jwtService.sign(payload);
@@ -101,7 +94,7 @@ export class AuthService {
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role.roleName,
+        role: user.role,
       },
       token,
     };
@@ -119,7 +112,10 @@ export class AuthService {
 
     if (user && (await bcrypt.compare(password, user.password))) {
       const { password: _, ...result } = user;
-      return result;
+      return {
+        ...result,
+        role: user.role.roleName,
+      };
     }
     return null;
   }

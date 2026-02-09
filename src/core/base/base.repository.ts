@@ -43,7 +43,7 @@ export class PrismaBaseRepository<T> implements IBaseRepository<T> {
       where: { id },
       data: {
         deletedAt: new Date(),
-        is_deleted: true,
+        isDeleted: true,
       },
     });
   }
@@ -57,7 +57,7 @@ export class PrismaBaseRepository<T> implements IBaseRepository<T> {
   async restore(id: string): Promise<T> {
     return this.prismaDelegate.update({
       where: { id },
-      data: { deletedAt: null, is_deleted: false },
+      data: { deletedAt: null, isDeleted: false },
     });
   }
 

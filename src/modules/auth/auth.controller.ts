@@ -1,11 +1,10 @@
+import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
 import {
-  Controller,
-  Post,
-  Body,
-  UseGuards,
-  Request,
-} from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { AuthLoginDto } from './dto/auth-login.dto';
 import { AuthRegisterDto } from './dto/auth-register.dto';
@@ -72,8 +71,9 @@ export class AuthController {
     status: 401,
     description: 'Credenciales inválidas',
   })
-  async login(@Body() loginDto: AuthLoginDto, @Request() req) {
-    return this.authService.login(loginDto);
+  async login(@Request() req) {
+    // El LocalAuthGuard ya validó el usuario y lo puso en req.user
+    return this.authService.login(req.user);
   }
 
   @Post('profile')

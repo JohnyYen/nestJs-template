@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
@@ -13,7 +13,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('jwt.secret') || process.env.JWT_SECRET || 'default-secret-key',
+      secretOrKey:
+        configService.get<string>('jwt.secret') ||
+        process.env.JWT_SECRET ||
+        'default-secret-key',
     });
   }
 
@@ -24,11 +27,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
 
     if (!user) {
-      throw new Error('Usuario no encontrado');
+      throw new UnauthorizedException('Usuario no encontrado');
     }
 
+    // Excluir el password del objeto retornado
+    const { password: _, ...userWithoutPassword } = user;
+
     return {
-      ...user,
+      ...userWithoutPassword,
       role: user.role.roleName,
     };
   }
